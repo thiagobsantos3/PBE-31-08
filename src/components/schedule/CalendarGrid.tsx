@@ -117,7 +117,6 @@ export function CalendarGrid({
           return (
             <button
               key={index}
-              onClick={() => isClickable ? onDateClick(day) : undefined}
               onClick={(e) => {
                 // Check if the click was on a quiz action button or its children
                 const target = e.target as HTMLElement;
