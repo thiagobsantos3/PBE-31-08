@@ -62,14 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         developerLog('🔄 Initial session found, loading user profile...', session.user.id);
         logLoadingState('Initial session found', true, 'Loading user profile');
-        await loadUserProfile(session.user.id, session.user.email);
+        // Do not block the global loading state on profile fetching
+        setLoading(false);
+        loadUserProfile(session.user.id, session.user.email)
+          .catch((error) => {
+            developerLog('💥 Initial profile load error (non-blocking):', error);
+          })
+          .finally(() => {
+            logLoadingState('Initial setup complete', false, 'Auth initialization finished');
+          });
       } else {
         developerLog('📭 No initial session found');
         logLoadingState('No initial session', false, 'No session found');
         setUser(null);
+        setLoading(false);
+        logLoadingState('Initial setup complete', false, 'Auth initialization finished');
       }
-      setLoading(false); // Set loading to false only after initial session check is complete
-      logLoadingState('Initial setup complete', false, 'Auth initialization finished');
     };
 
     initializeAuth(); // Call the async function immediately
@@ -89,8 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (session?.user) { // For SIGNED_IN, USER_UPDATED, PASSWORD_RECOVERY
         developerLog('🔄 User session active, loading profile');
         logLoadingState('User session active', true, 'Loading profile');
-        await loadUserProfile(session.user.id, session.user.email);
-        setLoading(false); // Ensure loading is false after user state is resolved
+        // Do not block the route on profile fetching
+        setLoading(false);
+        loadUserProfile(session.user.id, session.user.email).catch((error) => {
+          developerLog('💥 Auth event profile load error (non-blocking):', error);
+          logLoadingState('Auth event profile load error', false, error?.message || 'Unknown error');
+        });
       } else { // Fallback for other cases where session.user might be null
         developerLog('📭 Auth state change: No user in session');
         logLoadingState('Auth state change: No user', false, 'Setting user to null');
