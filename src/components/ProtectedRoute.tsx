@@ -15,10 +15,10 @@ export function ProtectedRoute({
   requireUser = false,
   allowedTeamRoles
 }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, hasSession, profileLoading } = useAuth();
 
   // TEMPORARY DEBUG LOG: This will always log when the component renders
-  console.log('🚦 ProtectedRoute: Rendering with user:', user, 'and loading:', loading);
+  console.log('🚦 ProtectedRoute: Rendering with user:', user, 'loading:', loading, 'hasSession:', hasSession, 'profileLoading:', profileLoading);
 
   if (loading) {
     return (
@@ -29,6 +29,15 @@ export function ProtectedRoute({
   }
 
   if (!user) {
+    // If we have an active session but profile is still loading in the background,
+    // avoid redirecting to login to prevent the flicker/logout on refresh.
+    if (hasSession && profileLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      );
+    }
     return <Navigate to="/login" replace />;
   }
 

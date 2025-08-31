@@ -9,6 +9,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) { 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasSession, setHasSession] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
     // In production, developer mode should always be false
     if (import.meta.env.PROD) {
@@ -63,18 +65,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         developerLog('🔄 Initial session found, loading user profile...', session.user.id);
         logLoadingState('Initial session found', true, 'Loading user profile');
         // Do not block the global loading state on profile fetching
+        setHasSession(true);
+        setProfileLoading(true);
         setLoading(false);
         loadUserProfile(session.user.id, session.user.email)
           .catch((error) => {
             developerLog('💥 Initial profile load error (non-blocking):', error);
           })
           .finally(() => {
+            setProfileLoading(false);
             logLoadingState('Initial setup complete', false, 'Auth initialization finished');
           });
       } else {
         developerLog('📭 No initial session found');
         logLoadingState('No initial session', false, 'No session found');
         setUser(null);
+        setHasSession(false);
+        setProfileLoading(false);
         setLoading(false);
         logLoadingState('Initial setup complete', false, 'Auth initialization finished');
       }
@@ -93,20 +100,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         developerLog('👋 User signed out or deleted');
         logLoadingState('User signed out/deleted', false, 'Clearing user state');
         setUser(null);
+        setHasSession(false);
+        setProfileLoading(false);
         setLoading(false); // Ensure loading is false after sign out
       } else if (session?.user) { // For SIGNED_IN, USER_UPDATED, PASSWORD_RECOVERY
         developerLog('🔄 User session active, loading profile');
         logLoadingState('User session active', true, 'Loading profile');
         // Do not block the route on profile fetching
+        setHasSession(true);
+        setProfileLoading(true);
         setLoading(false);
-        loadUserProfile(session.user.id, session.user.email).catch((error) => {
-          developerLog('💥 Auth event profile load error (non-blocking):', error);
-          logLoadingState('Auth event profile load error', false, error?.message || 'Unknown error');
-        });
+        loadUserProfile(session.user.id, session.user.email)
+          .catch((error) => {
+            developerLog('💥 Auth event profile load error (non-blocking):', error);
+            logLoadingState('Auth event profile load error', false, error?.message || 'Unknown error');
+          })
+          .finally(() => {
+            setProfileLoading(false);
+          });
       } else { // Fallback for other cases where session.user might be null
         developerLog('📭 Auth state change: No user in session');
         logLoadingState('Auth state change: No user', false, 'Setting user to null');
         setUser(null);
+        setHasSession(false);
+        setProfileLoading(false);
         setLoading(false);
       }
     });
@@ -837,6 +854,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser,
     logout,
     loading,
+    hasSession,
+    profileLoading,
     isDeveloperMode,
     toggleDeveloperMode,
     developerLog,

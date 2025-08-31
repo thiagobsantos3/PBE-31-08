@@ -67,6 +67,8 @@ export interface AuthContextType {
   resetPasswordWithToken: (accessToken: string, newPassword: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  hasSession: boolean;
+  profileLoading: boolean;
   isDeveloperMode: boolean;
   toggleDeveloperMode: () => void;
 }
